@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CNAPurge · Marcaje de párrafos — panel de expertos ("B")</title>
+<style>
+:root{
+  --tinta:#1a1a1a; --papel:#fafafa; --acento:#1a3a5c; --si:#1b7a3a;
+  --no:#8b1e1e; --nse:#8a6d1b; --borde:#ccc; --gris:#555; --ante:#eef2f6;
+}
+*{box-sizing:border-box; max-width:100%;}
+body{font-family:Georgia,'Times New Roman',serif; background:var(--papel); color:var(--tinta);
+     margin:0; padding:1.2rem; line-height:1.5; font-size:17px;}
+h1,h2,h3{font-family:Georgia,serif; color:var(--acento); margin-top:0;}
+h1{font-size:1.25rem; border-bottom:2px solid var(--acento); padding-bottom:.3rem;}
+.veneta{max-width:54rem; margin:0 auto; background:#fff; border:1px solid var(--borde);
+        padding:1.2rem 1.4rem; border-radius:4px;}
+.boton{display:inline-block; background:var(--acento); color:#fff; border:0; padding:.55em 1.1em;
+       font-family:inherit; font-size:1rem; cursor:pointer; border-radius:3px; margin-top:.8rem;}
+.boton:disabled{opacity:.4; cursor:not-allowed;}
+.boton.sec{background:#fff; color:var(--acento); border:1px solid var(--acento);}
+.boton.peligro{background:#8b1e1e;}
+.mini{font-size:.85rem; color:var(--gris);}
+.oculto{display:none;}
+textarea,input[type=text],select{width:100%; font-family:inherit; font-size:1rem; padding:.4em; border:1px solid var(--borde);}
+.chk{display:block; margin:.45em 0; cursor:pointer;}
+.barra{height:6px; background:#e5e5e5; border-radius:3px; margin:.5rem 0;}
+.barra>i{display:block; height:100%; background:var(--acento); border-radius:3px; transition:width .2s;}
+.parrafo{border:1px solid var(--borde); padding:1rem 1.1rem; margin:1rem 0; background:#fff; border-radius:4px;}
+.parrafo h3{margin-bottom:.4rem; font-size:1rem;}
+.parrafo .dim{font-size:.85rem; color:var(--gris); margin:0 0 .2rem 0;}
+.parrafo .texto{font-size:1.08rem; margin:.6rem 0 .8rem 0; line-height:1.55; white-space:pre-wrap;}
+.parrafo .pregunta{font-weight:bold; color:var(--acento); margin:.2rem 0 .3rem 0; font-size:1.02rem;}
+.parrafo label{display:block; margin:.3em 0; cursor:pointer; padding:.2em 0; font-size:1.05rem;}
+/* marcaje sin retroalimentación de color: el estado lo muestran el radio y el texto "Registrado" */
+.ante{background:var(--ante); border-left:4px solid var(--acento); padding:.7em .9em;
+      margin:.4rem 0 .8rem 0; font-size:.95rem; white-space:pre-wrap; border-radius:0 3px 3px 0;}
+.tarjeta{font-size:.95rem; line-height:1.5; margin:.4rem 0 1rem 0;}
+.tarjeta h3{color:var(--acento); border-bottom:1px solid var(--borde); padding-bottom:.15rem;
+            margin:1.1rem 0 .45rem 0; font-size:1.02rem;}
+.tarjeta h3:first-child{margin-top:.2rem;}
+.tarjeta ul{margin:.3rem 0 .6rem 1.2rem; padding:0;}
+.tarjeta li{margin:.18rem 0;}
+.tarjeta p{margin:.4rem 0;}
+.registrado{font-weight:bold; margin-top:.6rem;}
+kbd{background:#eee; border:1px solid #ccc; border-radius:3px; padding:0 .35em; font-size:.85em;}
+table.res{border-collapse:collapse; width:100%; font-size:.9rem; margin:.6rem 0;}
+table.res th, table.res td{border:1px solid #ccc; padding:.4em .5em; text-align:left;}
+.paso{color:var(--acento); font-weight:bold; font-size:.9rem; margin-bottom:.4rem;}
+#barraSup{display:flex; justify-content:space-between; align-items:center; gap:1rem;
+          border-bottom:1px solid var(--borde); padding-bottom:.5rem; margin-bottom:.8rem;}
+#barraSup .mini b{color:var(--acento);}
+.nav{display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.8rem;}
+.prevnext{margin-top:1rem; display:flex; gap:.6rem; align-items:center;}
+.prevnext .boton{margin-top:0;}
+.fb-ok{color:var(--si); font-weight:bold;}
+.fb-mal{color:var(--no); font-weight:bold;}
+.nose-motivo{margin-top:.4rem;}
+#overlayTarjeta{position:fixed; inset:0; background:rgba(0,0,0,.45); overflow:auto;
+                padding:2rem 1rem; z-index:50;}
+#overlayTarjeta .cajaTarjeta{background:#fff; border:1px solid var(--borde); border-radius:4px;
+                max-width:54rem; margin:0 auto; padding:1.2rem 1.4rem;}
+</style>
+</head>
+<body>
+<div class="veneta">
+<div id="barraSup">
+  <span class="mini">Experto <b>"B"</b> · instrumento "panel_v3_20261109_n92"</span>
+  <span>
+    <button class="boton sec" id="bVerTarjeta" style="margin-top:0" title="Mostrar las instrucciones (Esc cierra)">Instrucciones</button>
+    <span class="mini">Texto: <button class="boton sec" id="bTextoMenos" style="margin-top:0; padding:.2em .5em">A−</button> <button class="boton sec" id="bTextoMas" style="margin-top:0; padding:.2em .5em">A+</button></span>
+    <button class="boton sec" id="bRespaldoTop" style="margin-top:0">Descargar respaldo</button>
+    <label class="boton sec" style="margin-top:0" for="fImport">Importar respaldo</label>
+    <input type="file" id="fImport" accept="application/json,.json" class="oculto">
+  </span>
+</div>
+<div id="overlayTarjeta" class="oculto">
+  <div class="cajaTarjeta">
+    <div class="tarjeta" id="tarjetaOverlay"></div>
+    <button class="boton" id="bCerrarTarjeta">Cerrar instrucciones</button>
+  </div>
+</div>
+
+<section id="s0">
+<p>Marcarás <strong>92 párrafos</strong>, que también serán evaluados de forma
+independiente por otras personas expertas: párrafos de resoluciones del CNA sobre pedagogías de universidades estatales
+(2025–2026). Por cada párrafo respondes <strong>¿contiene una debilidad?</strong> —
+<strong>contiene / no contiene / no sé</strong>. El progreso se guarda solo en
+este navegador; puedes detenerte, volver y corregir antes de entregar.</p>
+
+<p class="paso">Instrucciones (léelas completas)</p>
+<div class="tarjeta" id="tarjeta"></div>
+<p class="mini">Atajos: <kbd>1</kbd> contiene debilidad · <kbd>2</kbd> no contiene debilidad · <kbd>3</kbd> no sé ·
+<kbd>←</kbd>/<kbd>→</kbd> navegar · <kbd>Enter</kbd> avanzar. Durante el marcaje puedes reconsultarlas con el botón <strong>Instrucciones</strong>.</p>
+
+<p class="mini">Al continuar aceptas participar: tus veredictos se usan de forma anónima
+(código "B") para medir acuerdo; trabajarás sola/o y sin consultar material
+externo ni la salida del modelo.</p>
+
+<button class="boton" id="b0">Aceptar y continuar</button>
+</section>
+
+<section id="s2" class="oculto">
+<p class="paso">Práctica de calibración · <span id="progPil"></span></p>
+<div class="barra"><i id="barraPil" style="width:0%"></i></div>
+<p class="mini">Tres párrafos de entrenamiento (no forman parte de los 92). Al marcar verás la
+clave y el motivo. <strong>Es formativo</strong>: el resultado no bloquea el paso al
+marcaje real.</p>
+<div id="escenarioPil"></div>
+</section>
+
+<section id="s2b" class="oculto">
+<p class="paso">Resultado de la práctica</p>
+<h1 id="tituloPiloto"></h1>
+<div id="tablaPiloto"></div>
+<div id="piePiloto"></div>
+</section>
+
+<section id="s3" class="oculto">
+<p class="paso">Marcaje real · <span id="progProd"></span></p>
+<div class="barra"><i id="barraProd" style="width:0%"></i></div>
+<p class="mini" id="miniProd"></p>
+<div id="escenarioProd"></div>
+<div class="prevnext">
+  <button class="boton sec" id="bPrev" style="margin-top:0">← Anterior</button>
+  <button class="boton sec" id="bNext" style="margin-top:0">Siguiente →</button>
+  <button class="boton sec" id="bPrimeroSin" style="margin-top:0">Ir al primero sin responder</button>
+</div>
+<p class="mini" style="margin-top:1rem"><a href="#" id="linkParcial">terminar y exportar lo marcado hasta ahora</a></p>
+</section>
+
+<section id="s4" class="oculto">
+<p class="paso">Fin</p>
+<h1 id="tituloFin">Marcaje terminado</h1>
+<p id="resumen"></p>
+<button class="boton" id="bJSON">Descargar respaldo (JSON)</button>
+<pre id="preview" style="font-size:.75rem; background:#f4f4f4; padding:.8em; overflow:auto; max-height:16rem;"></pre>
+<p class="mini">Envía el archivo JSON descargado al equipo de investigación (correo del coordinador).
+Puedes reabrir este archivo más tarde para revisar o completar; también puedes importar un
+respaldo para continuar en otra computadora.</p>
+</section>
+
+</div>
+
+<script>
+"use strict";
+const EXPERTO = "B";
+const VERSION = "panel_v3_20261109_n92";
+const TIPO = "panel_respaldo";
+const ASIG_SHA = "ace4c5c6722089770bce22d84b396601994858d369154d54130d87587848b687";
+const TARJETA_HTML = "<h3>DEFINICIÓN OPERACIONAL<\/h3>\n<p>Una debilidad es un juicio negativo de la Comisión sobre un aspecto del programa: declara que algo falta o no existe, es inadecuado o insuficiente, no se cumple o se cumple solo parcialmente, o formula un aspecto por mejorar como déficit del programa.<\/p>\n<h3>No son debilidades:<\/h3>\n<ul><li>Elogios o reconocimientos de fortalezas.<\/li><li>Cumplimiento pleno de lo exigido.<\/li><li>Menciones de un tema sin juicio sobre el programa.<\/li><li>Contexto normativo (leyes, reglamentos, marcos de referencia).<\/li><li>Datos neutros (fechas, duración, número de estudiantes, cifras).<\/li><li>Descripción de procedimientos u obligaciones de trámite.<\/li><li>Planes, compromisos o recomendaciones genéricas que no reconocen un déficit.<\/li><\/ul>\n<h3>PROCEDIMIENTO<\/h3>\n<p>1. Lee el párrafo completo antes de decidir. Resuelve las referencias internas (&quot;de este grupo&quot;, &quot;lo anterior&quot;, &quot;el proceso anterior&quot;) con el contexto del propio párrafo.<br>2. Evalúa cada frase con tres preguntas:<br>a. ¿Contiene un juicio de la Comisión sobre un aspecto del programa?<br>b. ¿Ese juicio es negativo respecto de lo exigido?<br>c. ¿La frase es legible y está completa?<br>3. Si al menos una frase cumple (a) y (b), el párrafo contiene una debilidad, aunque el resto sea elogio, contexto o datos.<\/p>\n<h3>REGLAS DE DECISIÓN<\/h3>\n<ul><li>Una frase de tipo &quot;se sugiere&quot;, &quot;sería deseable&quot; o &quot;convendría fortalecer X&quot; cuenta como debilidad solo si presenta X como carencia actual del programa. Si es una recomendación genérica, no cuenta.<\/li><li>Un párrafo que combina elogio y déficit formulado (por ejemplo, &quot;si bien..., aún no...&quot;) contiene una debilidad.<\/li><li>Señales frecuentes de debilidad: &quot;falta&quot;, &quot;no existe&quot;, &quot;no explicita&quot;, &quot;inadecuado&quot;, &quot;insuficiente&quot;, &quot;no asegura&quot;, &quot;aún no aborda&quot;, &quot;es necesario que&quot;, &quot;es preciso que&quot;, &quot;presenta debilidades en&quot;. Las señales orientan la lectura; no reemplazan el test.<\/li><li>Si el documento aplica los Criterios de Evaluación de Carreras de Educación (marco 2007): el incumplimiento de un aspecto formulado con &quot;debe&quot; es debilidad; el incumplimiento de uno formulado con &quot;debiera&quot; no lo es.<\/li><li>Usa únicamente el texto recibido. No uses conocimiento externo sobre la institución, la carrera ni los criterios de evaluación.<\/li><li>Responde &quot;no sé&quot; solo si el párrafo es mayoritariamente ilegible o truncado, de modo que impida el juicio. Una frase ilegible aislada no justifica esta categoría si el resto permite decidir.<\/li><\/ul>\n<h3>EJEMPLOS (diez)<\/h3>\n<p>1. &quot;Las debilidades informadas en el proceso anterior fueron superadas&quot;<br>-&gt; no contiene debilidad (menciona, no dictamina).<br>2. &quot;Cumplimiento parcial en la superación de las debilidades... 11 aún pendientes&quot; -&gt; contiene debilidad (juicio: cumplimiento parcial).<br>3. &quot;Se destaca que el cuerpo docente cuenta con postgrados&quot;<br>-&gt; no contiene debilidad (fortaleza).<br>4. &quot;Conforme a la Ley 20.129...&quot; -&gt; no contiene debilidad (contexto legal).<br>5. &quot;La institución deberá informar cambios en la oferta&quot;<br>-&gt; no contiene debilidad (obligación procedimental).<br>6. &quot;Se sugiere fortalecer la vinculación con el medio&quot; -&gt; contiene debilidad solo si se<br>formula como carencia; recomendación genérica -&gt; no contiene debilidad.<br>7. &quot;El perfil de egreso no explicita competencias verificables&quot; -&gt; contiene debilidad.<br>8. &quot;De este grupo, 40% son mujeres&quot;<br>-&gt; no contiene debilidad (dato neutro; &quot;este grupo&quot; se resuelve leyendo el párrafo).<br>9. &quot;Esto tampoco se cumple en la carrera&quot; (leído su párrafo) -&gt; contiene debilidad.<br>10. &quot;[fragmento ilegible por digitalización]&quot; -&gt; no sé.<\/p>";
+const TARJETA_SHA = "e7b05234250de1ba9af1db008049a066ccad7545109ef48b054c8204711d7a74";
+const PRACTICA = [{"id": 19954, "texto": "Observamos que el Programa ha logrado subsanar una cantidad significativa de debilidades identificadas en el proceso de acreditación anterior, presentándose al actual proceso con cinco de ellas superadas y cuatro en vías de superación.", "clave": "no_es_debilidad", "nota": "menciona avance (5 superadas / 4 en vias de superacion) sin dictamen negativo actual; contrastar con 13205"}, {"id": 5102, "texto": "Si bien la Carrera implementa actividades de vinculación con el medio, estas tienen un foco de servicio, siendo aún un desafío su bidireccionalidad, lo que identifica en su Plan de Mejora.", "clave": "es_debilidad", "nota": "elogio + deficit formulado (\"si bien implementa... siendo aun un desafio su bidireccionalidad\")"}, {"id": 13205, "texto": "La Carrera se presenta a su cuarto proceso de acreditación, con cinco años otorgados por la CNA en 2019. Constatamos que existe espacio para fortalecer la capacidad de mejora y autorregulación, considerando que la mayor parte de las debilidades detectadas en el proceso de acreditación anterior no han sido completamente superadas.", "clave": "es_debilidad", "nota": "parecido a 16549 pero DICTAMINA: \"no han sido completamente superadas\" + \"espacio para fortalecer\""}];
+const ITEMS = [{"id": 300000025, "texto": "En cuanto a los recursos bibliográficos, y en respuesta a una debilidad del proceso anterior, que señalaba el manejo de indicadores de cobertura de estos, la Carrera ha implementado acciones como la elaboración de una base de datos de bibliografía básica y complementaria."}, {"id": 300000086, "texto": "La Carrera cuenta con un perfil de egreso formalizado y coherente con las declaraciones estratégicas y el Modelo Educativo institucional, así como con la denominación del título y grado otorgados. La difusión del perfil se realiza mediante canales institucionales, lo que favorece su conocimiento por actores internos y externos."}, {"id": 300000098, "texto": "En cuanto a los indicadores de acceso y matrícula, la Carrera presenta una ocupación de vacantes de 100% en las últimas tres cohortes y alcanza una matrícula de primer año de 66 estudiantes en 2024, la cifra más alta del quinquenio. No obstante, la matrícula total revela una leve, pero sostenida disminución, de 286 (2020) a 256 estudiantes (2024). En cuanto al perfil, la participación femenina es de 26% en la matrícula total y de 30,3% en primer año en 2024."}, {"id": 300000101, "texto": "En cuanto a la pertinencia externa y los resultados del proceso formativo, observamos que la empleabilidad de las y los egresados constituye un aspecto por mejorar. La tasa de empleo disminuye en las últimas cohortes evaluadas, pasando de 78%, para la cohorte 2017, a 31%, para la cohorte 2019."}, {"id": 300000115, "texto": "La Carrera se desarrolla al alero de la Facultad de Educación y Humanidades y de l Departamento de Ciencias de la Educación. Declara sus propósitos y objetivos en el Plan de Desarrollo de la Escuela de Educación Física, los que están alineados con el Plan de Desarrollo de la Universidad. A nivel de gestión interna, dispone del Plan de Desarrollo Operativo 2020-2024 que ordena líneas estratégicas y acciones para asegurar condiciones de docencia, particularmente en mantenimiento y verificación de equipamiento, espacios y materiales."}, {"id": 300000130, "texto": "Tiene una mención vinculada a temáticas relacionadas con autismo y problemas conductuales. Al respecto, sugerimos revisar tanto su definición como su alineamiento con las asignaturas y prácticas, considerando el campo laboral declarado."}, {"id": 300000180, "texto": "La Carrera dispone de mecanismos formalizados y organizados para atender las solicitudes e inquietudes de los y las estudiantes. Además, existen espacios de participación estudiantil formalizados a nivel institucional."}, {"id": 300000233, "texto": "La Carrera se presenta a su quinto proceso con una acreditación de cinco años otorgados por la CNA."}, {"id": 300000262, "texto": "Los recursos financieros para garantizar la sustentabilidad de la Carrera se encuentran comprometidos por la Institución, los cuales se concretan en la elaboración de los presupuestos anuales. Además, la Dirección de Carrera cuenta con un presupuesto autónomo para financiar gastos, operaciones y requerimientos que puedan surgir de parte del estudiantado."}, {"id": 300000286, "texto": "Los indicadores académicos muestran que las tasas de retención de primer año para las cohortes entre 2018-2022 son de 68%, a excepción de la cohorte 2020, que muestra una tasa de 80%. En tanto, la tasa de retención al tercer año alcanza un 53% para la cohorte 2018, un 57% para la 2019, un 71% para la 2020 y un 36% para la cohorte 2021. Por su parte, la tasa de titulación teórica y acumulada para la cohorte 2019 alcanzan un 8%."}, {"id": 300000310, "texto": "La implementación de las prácticas se encuentra debidamente normada. La Escuela de Pedagogía cuenta con una Unidad de Prácticas Pedagógicas, la cual administra los convenios con los establecimientos educativos de los centros de práctica y facilita la inserción de los y las estudiantes en ellos."}, {"id": 300000370, "texto": "La Carrera cuenta con un plantel docente conformado, en 2023, por 47 académicos y académicas para impartir el plan de estudios. Al analizar el grado académico se observa que 12 de ellos cuentan con grado de doctorado, 22 cuentan con grado de magíster y 13 cuentan con grado de licenciatura o con título profesional. Respecto a la cantidad de horas establecidas por contrato, identificamos que 31 personas cuentan con un contrato de 44 horas, tres de ellos, con un contrato entre 22 y 43 horas y 13, con un contrato menor o igual a 21 horas."}, {"id": 300000408, "texto": "La Institución cuenta con el Reglamento para la Formación Práctica Pedagógica, en el que se detallan los roles de coordinación general de prácticas, coordinación disciplinar, docente de asignatura, profesor tutor o tutora, profesor colaborador o colaboradora y profesor o profesora en formación. La coordinación es parte de la Escuela de Pedagogía."}, {"id": 300000410, "texto": "La Carrera cumple con una evaluación periódica y sistemática de la línea de práctica, aunque no ha incorporado adecuadamente las opiniones externas, por lo que la instamos a fortalecer el vínculo con las y los profesores guías, con empleadores y con las personas tituladas."}, {"id": 300000411, "texto": "El cuerpo académico es suficiente e idóneo para el desarrollo del proceso formativo. Observamos que el plantel cuenta con una alta formación académica, equidad de género, dedicación a la investigación y líneas consolidadas de productividad. Está conformado por 31 integrantes, de quienes 51,6% son mujeres. Del total, 24 tienen jornada completa, dos tienen media jornada y cinco, una jornada por horas. Por otra parte, 10 tienen doctorado, 15 cuentan con magíster, cuatro personas tienen título profesional o licenciatura y dos tienen otro tipo de formación."}, {"id": 300000424, "texto": "Estimamos pertinente que la Carrera incorpore los desafíos y observaciones que se han relevado en este proceso de acreditación y que son expresados en esta resolución."}, {"id": 300000431, "texto": "Durante el proceso de ajuste curricular se consideraron diversos aspectos, como la actualización de los estándares, la implementación de planes de nivelación según los resultados de la Evaluación Nacional Diagnóstica y la incorporación transversal y profundización de las nuevas perspectivas del currículo nacional, especialmente aquellas vinculadas a la mirada actual de la niñez y la perspectiva de derechos. También se tomaron en cuenta las sugerencias del Consejo Asesor Externo del Programa."}, {"id": 300000469, "texto": "La Carrera cuenta con un perfil de egreso vigente desde 2021. En este se declaran competencias de formación integral (generales y transversales), disciplinares, de mención y de formación inicial docente. El perfil es pertinente y consistente con la denominación del grado y título que entrega."}, {"id": 300000480, "texto": "La formación práctica de la Carrera se desarrolla en el marco del Modelo de Prácticas de la Universidad, que establece tres niveles de progresión: inicial, intermedio y egreso. En este marco, se implementa la línea de formación práctica compuesta por 10 experiencias reflexivas y profesionales. La secuencia contempla dos prácticas en el nivel inicial, dos en el intermedio y seis en el nivel de egreso. Este modelo se enmarca en la competencia de Gestión de situaciones de enseñanza-aprendizaje y se articula curricularmente en tres niveles de desarrollo: Identidad personal, Identidad pedagógica e Identidad pedagógica disciplinar."}, {"id": 300000522, "texto": "La Institución provee los recursos financieros para satisfacer las necesidades de la Carrera, quien además recibe apoyo económico de la Dirección de Desarrollo Estratégico y Calidad, la Dirección de Docencia y la Dirección General de Asuntos Estudiantiles."}, {"id": 300000524, "texto": "La Carrera utiliza los resultados de la Evaluación Diagnóstica Inicial en matemáticas, lenguaje y diagnóstico de aprendizaje autónomo, y de la Evaluación Intermedia y de la Evaluación Nacional Diagnóstica para diseñar e implementar acciones de mejora a través de diversas actividades; sin embargo, no observamos un análisis autocrítico sobre el proceso formativo de la Carrera. La Oficina de Acompañamiento aplica reforzamientos obligatorios a quienes reprueban y necesitan nivelación en las materias evaluadas, a través de módulos de desarrollo de habilidades lecto-comprensivas o habilidades matemáticas para el aprendizaje profesional docente, entre otros. Sin embargo, no observamos acciones remediales efectivas para la mejora de los resultados."}, {"id": 300000593, "texto": "A nivel institucional, se cuenta con un conjunto de políticas y normas relativas a la dotación e idoneidad del cuerpo docente. También cuenta con políticas para el ingreso y evaluación docente, además de la jerarquización y la formación para el sello institucional."}, {"id": 300000609, "texto": "En la formulación del perfil, la Carrera consideró la consulta a actores internos y externos relevantes, como también su difusión al estudiantado, al profesorado, a empleadores y centros de práctica."}, {"id": 300000634, "texto": "Si bien la Carrera demuestra un aumento de actividades investigativas respecto a la acreditación anterior, la investigación en el campo específico de la enseñanza -aprendizaje y evaluación del inglés es escasa."}, {"id": 300000644, "texto": "La Carrera cumple con los requisitos establecidos por la Ley 20.903 para el ingreso de estudiantes de carreras de pedagogía y el uso de evaluaciones diagnóstica y END para la mejora del proceso formativo."}, {"id": 300000658, "texto": "Las prácticas profesionales constituyen el eje articulador del plan, integrando saberes pedagógicos y disciplinares, y promoviendo la investigación formativa a través de actividades como los seminarios y talleres de fortalecimiento en etapas avanzadas. Se incorporan metodologías prácticas en asignaturas de especialidad, tales como trabajo de campo, laboratorios y salidas a terreno, con el propósito de asegurar aprendizajes aplicados al ejercicio docente."}, {"id": 300000663, "texto": "No obstante, advertimos aspectos a reforzar en la progresión de la línea de formación biológica, así como en la coherencia de los cursos de Física, Química y Matemáticas con el perfil de egreso, además de la persistencia de metodologías evaluativas tradicionales en algunas asignaturas."}, {"id": 300000687, "texto": "La dirección del Departamento de Química se encarga de la planificación de las actividades académicas, las que se definen en su Plan de Desarrollo, el que es coherente con los propósitos de la Facultad y con el Plan de Desarrollo Institucional. La planificación académica también se enmarca bajo la normativa del Instructivo de Asignación de Carga Académica."}, {"id": 300000743, "texto": "Valoramos las acciones desarrolladas por la Carrera para promover el tránsito desde un modelo curricular centrado en contenidos a uno que potencia el desarrollo de competencias. En este tránsito, representa una oportunidad de mejora velar por la homogeneidad de los productos curriculares, como son los programas de las asignaturas. Por ello, instamos a continuar y consolidar la completitud de la innovación curricular, lo que podremos observar completamente en el próximo proceso de acreditación. Por lo anterior, hemos decidido mantener la observación."}, {"id": 300000771, "texto": "La progresión de los aprendizajes está definida y se expresa mediante una formación diferenciada en tres trayectorias formativas, lo que permite una especialización más focalizada. El diseño curricular contempla asignaturas integradoras y prácticas progresivas que facilitan la observación del logro del perfil de egreso a lo largo de la formación. Por otro lado, los programas de asignatura presentan coherencia entre los objetivos, contenidos y sistema de evaluación definidos. Asimismo, se alinean con los estándares pedagógicos y disciplinarios vigentes. Sin embargo, la trazabilidad formal de los programas de asignaturas aún se encuentra en desarrollo, lo que limita la verificación de ajustes sistemáticos en función de evidencias del proceso formativo, lo que será susceptible de ser evaluado en el próximo proceso de acreditación."}, {"id": 300000776, "texto": "Respecto a la estructura de la formación práctica en el plan de estudios, constatamos diferencias de carga horaria presencial entre especialidades durante el proceso de práctica. En este contexto, no nos es posible observar una progresión formativa equivalente entre ellas, por lo que sugerimos avanzar hacia una homogeneización en la carga horaria para el desarrollo de las prácticas."}, {"id": 300000782, "texto": "La Carrera dispone de un cuerpo académico que cumple con los niveles de formación requeridos. Nueve de sus integrantes forman parte del núcleo, y cuentan con formación disciplinar y pedagógica acorde al Programa, además de una antigüedad que evidencia condiciones de estabilidad."}, {"id": 300000789, "texto": "La atención a estudiantes se canaliza mediante mecanismos formales como el sistema SIAE, tutorías académicas y articulación con la Unidad de Inclusión. No obstante, observamos que la Carrera no cuenta con una evaluación sistemática de su impacto, ni con una trazabilidad que permita vincular estas acciones con los resultados de aprendizaje o el perfil de egreso."}, {"id": 300000797, "texto": "En relación con los Estándares Pedagógicos, aunque el Programa declara su cobertura, observamos una implementación desigual, especialmente en la mención Danza, donde predomina la exploración escénica y la experimentación corporal. Este énfasis, aunque sustentado por referentes teóricos validados en el campo artístico, no asegura por sí mismo el desarrollo de habilidades pedagógicas acordes a los requerimientos escolares. En contraste, la mención Teatro presenta una estructura más organizada, con mayor coherencia entre lo disciplinar y lo formativo, lo que da cuenta de mejores niveles de integración con los estándares del sistema escolar. Al respecto, es importante equilibrar la enseñanza, priorizando los aspectos pedagógicos sobre los interpretativos."}, {"id": 300000800, "texto": "El plan de estudios contempla 22 cursos distribuidos en cuatro semestres, con una carga académica total de 120 créditos SCT. La estructura curricular se organiza en dos áreas de formación, una disciplinar y otra pedagógica. El Programa se imparte en modalidad B-Learning. Respecto de esto, estimamos importante revisar la modalidad en la que se imparte el Programa considerando la naturaleza de las disciplinas en las que se enfoca y el origen de sus estudiantes."}, {"id": 300000816, "texto": "No es posible identificar un núcleo académico ni una dirección a cargo del Programa, lo que compromete la estabilidad, proyección y consolidación académica, al limitar su capacidad de responder a los requerimientos. En vez de un núcleo, se declara un académico como coordinador del Programa y dos académicas, una como secretaria académica y otra como coordinadora de prácticas."}, {"id": 300000861, "texto": "En 2025, la matrícula total es de 91 estudiantes, con una matrícula nueva de 68 personas, de quienes 86,76% son mujeres. El Programa declara la participación de estudiantes de distintas regiones del país. Al respecto, sugerimos establecer un protocolo ante inasistencias a las actividades obligatorias presenciales considerando la diversidad territorial del estudiantado."}, {"id": 300000905, "texto": "Los centros de práctica se encuentran vinculados con la Institución a través de convenios. En esta línea, la Carrera incorpora en su Plan de Mejora acciones que permitan fortalecer la articulación con los centros. Además, aunque se cuenta con las triadas formativas, consideramos que la Carrera puede avanzar en el fortalecimiento de instancias complementarias de capacitación u otras acciones que beneficien a las y los profesores que son parte de los centros de práctica. En esta misma línea, consideramos que existe espacio para complementar la formación práctica con proyectos vinculantes con el medio y proyectos de investigación que busquen fortalecer la bidireccionalidad, así como la generación de conocimiento nuevo."}, {"id": 300000910, "texto": "También se promueve la investigación del cuerpo académico a través de la asignación especifica de carga académica para dicho efecto, lo que ha resultado en un aumento significativo en la producción, con seis publicaciones y ocho artículos en revisión en 2024. No obstante, consideramos que la Carrera puede continuar avanzando en el fortalecimiento de la investigación vinculada con la formación inicial docente."}, {"id": 300000918, "texto": "La Universidad cuenta con la Política de Aseguramiento de la Calidad y Mejoramiento Continuo. El monitoreo y cumplimiento de los propósitos institucionales son canalizados a través del Sistema de Gestión y Aseguramiento de la Calidad (SIGAC). La Carrera cuenta con el Comité de Autoevaluación que hace partícipe a diferentes actores, con la finalidad de enriquecer el análisis de sus procesos académicos y administrativos."}, {"id": 300000940, "texto": "Si bien este eje cuenta con un carácter temprano y progresivo, advertimos que la formación práctica disciplinar es baja y no aborda de manera suficiente los tres niveles formativos que compromete el perfil de egreso."}, {"id": 300000951, "texto": "Cuenta con el Consejo Asesor Externo, en el que participan personas egresadas y representantes del sector laboral y colegio profesional que asesora a la dirección de Carrera, con retroalimentación con respecto al proceso formativo, perfil de egreso y materias atingentes."}, {"id": 300000959, "texto": "Su formulación se sustentó en los estándares orientadores para la formación docente y en un sello regional que vincula la astronomía con el aprendizaje de las matemáticas y la física, buscando responder a las necesidades del territorio. Orientado por el enfoque por competencias del Modelo Educativo, está integrado por competencias genéricas, específicas de la licenciatura, específicas de la práctica y específicas de la disciplina."}, {"id": 300000981, "texto": "El cuerpo académico de la Carrera, informado al momento de la evaluación, es de 29 docentes en 2025, con 38% de mujeres. Del total, nueve cuentan con grado de doctorado, 13 cuentan con grado de magíster y siete integrantes cuentan con licenciatura o título profesional. Respecto a la jornada, 16 personas cuentan con un contrato menor o igual a 19 horas semanales y 13 tienen un contrato de 40 horas o más."}, {"id": 300000998, "texto": "En relación con la implementación y seguimiento de los planes de mejora, si bien se presentan planes operativos anuales y un plan 2020-2024, no observamos evaluaciones claras de su cumplimiento. Además, detectamos una lentitud en la ejecución de las acciones, atribuida principalmente a la falta de personal académico con dedicación a estas tareas. En el proceso de acreditación anterior se levantaron 11 debilidades, de las cuales se han superado solo dos. El resto de las debilidades las mantiene en proceso de superación."}, {"id": 300001004, "texto": "La Carrera aplica una evaluación diagnóstica inicial, denominada FIT Choice, con el objetivo de identificar habilidades básicas, creencias pedagógicas y el componente vocacional para orientar estrategias de nivelación a través de la Unidad de Apoyo al Estudiante. No obstante, no se presentan datos sobre las acciones que se hayan implementado a partir de dicha evaluación, lo que impide conocer su impacto real en los procesos formativos. Además, la Carrera reconoce la necesidad de trabajar en una evaluación específica para sus estudiantes."}, {"id": 300001005, "texto": "En cuanto a la consistencia del plan de estudios con los estándares de la profesión docente, la Carrera detectó brechas en los estándares pedagógicos y disciplinarios, para lo cual elaboró una propuesta de ajuste de resultados de aprendizaje, contenidos, bibliografía, descripción, evaluación y metodologías."}, {"id": 300001018, "texto": "Observamos que el cuerpo docente está conformado principalmente por profesionales con formación en educación diferencial o especial y solo una parte de ellos posee especialización directa en dificultades de aprendizaje. Ante esto, si bien el profesorado aporta una base formativa importante, no resulta del todo suficiente para atender integralmente las necesidades académicas, formativas y de gestión de la Carrera, por lo que requiere ser fortalecido."}, {"id": 300001027, "texto": "Considerando el poco tiempo de implementación de la Carrera, estimamos pertinente que incorpore los desafíos y observaciones que se han relevado en este proceso de acreditación y que son expresados en esta resolución."}, {"id": 300001033, "texto": "El seguimiento de la trayectoria formativa del estudiante se organiza en tres ciclos de monitoreo (120 SCT, 240 SCT y finalización con práctica profesional y trabajo de síntesis), complementados con los resultados de la END. No obstante, estas acciones aún carecen de una sistematización consolidada que asegure trazabilidad y consistencia en el tiempo."}, {"id": 300001057, "texto": "La Carrera realiza el seguimiento de los resultados formativos mediante evaluaciones intermedias y finales, como los Talleres Integrados y el trabajo de síntesis profesional, y a través del análisis de fichas curriculares, tasas de aprobación y resultados de la END. Estos insumos son utilizados por la Comisión Curricular para generar alertas tempranas, proponer ajustes curriculares y retroalimentar la toma de decisiones. A su vez, la creación del Comité de Gestión Integral y la implementación de una plataforma digital han fortalecido la sistematización de estos procesos."}, {"id": 300001071, "texto": "La Carrera dispone de requisitos claros y definidos de admisión, en línea con los estándares institucionales que buscan un proceso de selección transparente y equitativo. También se implementa un diagnóstico institucional que considera caracterización, una escala de autorregulación del aprendizaje y una escala de preparación académica para la educación superior, cuyos resultados impulsan programas e instancias ofrecidas por la Unidad de Acompañamiento Estudiantil."}, {"id": 300001077, "texto": "Las tasas de empleo de las personas tituladas de las cohortes 2015-2019 son de 44% para Valparaíso y de 66% para San Felipe. Solo se informa el tiempo de inserción laboral de las personas tituladas de Valparaíso, el cual es de dos meses para la cohorte 2018 y de seis meses, para la 2017."}, {"id": 300001079, "texto": "El modelo establece que la Carrera tenga una actividad práctica en cada semestre del plan de estudios. La estructura considera una pasantía inicial en segundo semestre, una práctica intermedia integradora en cuarto semestre, una práctica avanzada mediada en séptimo semestre y una práctica final en noveno semestre. Cada una de ellas se complementa con un taller de preparación en algún semestre anterior. Adicionalmente, se tiene un taller de estrategias de microintervención en el sexto semestre."}, {"id": 300001139, "texto": "La Carrera define propósitos claros, coherentes con los propósitos de la Universidad expresados en el Plan Estratégico Institucional y los lineamientos del Departamento de Matemática y Ciencia de la Computación."}, {"id": 300001149, "texto": "La construcción del nuevo perfil de egreso consideró la participación de estudiantes, docentes, egresados y empleadores, velando por la consistencia interna y externa del mismo."}, {"id": 300001163, "texto": "La Facultad de Ciencia cuenta con una Oficina de Registro Curricular, la cual gestiona la información académica, que también es respaldada a nivel institucional por el Servicio de Gestión Informática y Computación y la unidad de Registro Académico y Curricular de la Universidad, que depende de la Vicerrectoría Académica."}, {"id": 300001210, "texto": "El Programa aplica políticas y mecanismos de revisión curricular a través del Comité Curricular, con evaluaciones semestrales que permiten identificar asignaturas críticas y aplicar ajustes microcurriculares, manteniendo la coherencia del plan con la realidad de la educación técnico profesional."}, {"id": 300001253, "texto": "Respecto a los datos de progresión de la Carrera, observamos que la matrícula nueva de 2024 corresponde a 34 estudiantes. La matrícula total en el mismo año es de 154 estudiantes. La tasa de retención del primer año de la cohorte 2024 es de 85,3%. Por su parte, la titulación oportuna en 2019 es de 46,7%"}, {"id": 300001281, "texto": "El diseño y ajuste del perfil de egreso considera los Estándares Pedagógicos y Disciplinares para la Formación Inicial Docente, no obstante, el planteamiento genérico del mismo dificulta establecer una alineación explícita con los Estándares de Formación de Profesores de Matemáticas y con las Bases Curriculares de tercero y cuarto medio."}, {"id": 300001291, "texto": "Para abordar los resultados en la Evaluación Nacional Diagnóstica, la Carrera estableció diversas acciones, entre ellas, rediseño y ajustes que incluyen los nuevos estándares de la profesión docente y talleres remediales de estándares específicos y de formación inicial docente. Sin perjuicio de lo anterior, es importante que la Carrera avance en la sistematización de la aplicación de estas estrategias, en el análisis de resultados específicos para ella y en la participación del estudiantado."}, {"id": 300001301, "texto": "La composición del equipo docente en las áreas de matemática y educación resulta adecuada, y cuenta con experiencia en el sistema escolar. No obstante, detectamos que la dotación en el área de didácticas de la especialidad es insuficiente. En este sentido, se han realizado gestiones para incorporar nuevos académicos, aunque esta medida no ha logrado concretarse."}, {"id": 300001307, "texto": "La gestión del equipo humano se rige por normativas institucionales claras y transparentes, que regulan los procesos de ingreso, promoción y evaluación. Aunque se han identificado niveles relevantes de rotación de personal, la Carrera dispone de un plan de perfeccionamiento que contempla capacitaciones, becas y convenios, orientados a fortalecer la docencia, la investigación y las competencias del cuerpo académico."}, {"id": 300001378, "texto": "La Institución cuenta con mecanismos para la adquisición, mantención y actualización de recursos de laboratorio, tecnológicos y bibliográficos que son implementados por la Carrera. Los recursos son adecuados y valorados por la comunidad estudiantil. El Campus Linares cuenta con apoyo administrativo, técnico y profesional."}, {"id": 300001408, "texto": "El Sistema de Bibliotecas está compuesto físicamente por 10 bibliotecas distribuidas en ambos campus y se organiza en base a un conjunto de plataformas interconectadas para facilitar el acceso a los recursos disponibles. Para 2025, la Institución cuenta con 2.847 volúmenes, 1.184 títulos, 710 revistas académicas (físicas o digitales) con suscripción y 8.989 libros digitales."}, {"id": 300001418, "texto": "En cuanto a los registros de información académica, observamos que cuentan con plataformas automatizadas tales como: Portal Académico UV, Sistema Integrado de Registro Académico (SIRA), Aula Virtual y Reporte de compromiso académico."}, {"id": 300001460, "texto": "En 2023, la Carrera ha logrado aumentar sus resultados en ambas pruebas de la Evaluación Nacional Diagnóstica (END), en comparación al año anterior. Al respecto, destacamos que en la prueba de conocimientos disciplinarios y didácticos ha logrado posicionarse continuamente sobre el promedio nacional, mientras que en la prueba de conocimientos pedagógicos aún presenta espacio para continuar su fortalecimiento por medio de talleres de reforzamiento y otros mecanismos implementados por la Carrera."}, {"id": 300001480, "texto": "Existen debilidades estructurales que afectan estos resultados, entre ellas la alta tasa de reprobación en asignaturas disciplinares críticas del primer año (Lectoescritura, Polifonía y música, Cultura y sociedad) y la ausencia de una sistematización de medidas que permitan abordar esta situación de manera oportuna y sostenida."}, {"id": 300001486, "texto": "El Modelo de Prácticas Pedagógicas se fundamenta en el Modelo Educativo institucional, estableciendo criterios asociados a la progresión formativa, asignación de horas curriculares, diversidad de experiencias y permanencia en los centros de práctica. Asimismo, el Reglamento de Prácticas Pedagógicas formaliza las funciones y responsabilidades de los distintos actores involucrados (coordinación, supervisora o supervisor universitario, profesor o profesora guía y estudiante en práctica), proporcionando un marco normativo para la implementación del proceso."}, {"id": 300001487, "texto": "En este contexto, la Universidad mantiene una red de convenios con establecimientos educacionales, de los cuales la Carrera utiliza un conjunto acotado para el desarrollo de sus prácticas. Algunos de ellos están en proceso de formalización, lo que da cuenta de un sistema de vinculación en desarrollo."}, {"id": 300001499, "texto": "La Carrera cuenta con mecanismos de seguimiento académico, particularmente en asignaturas críticas y en estudiantes con bajo rendimiento, los cuales son abordados de manera colaborativa por la dirección de Carrera y el Comité Curricular Permanente, en coordinación con el cuerpo docente."}, {"id": 300001511, "texto": "En esta línea, aun cuando se cuenta con mecanismos de acceso a información académica y de seguimiento estudiantil, estos no son utilizados de manera sistemática para monitorear el logro de los resultados de aprendizaje y retroalimentar el proceso formativo de manera continua."}, {"id": 300001535, "texto": "A nivel institucional se promueve la participación en concursos y proyectos para fomentar la investigación. Observamos la vinculación entre investigación y docencia en la incorporación de resultados investigativos en asignaturas de la Carrera, aunque persiste la necesidad de fortalecer su contribución sistemática en la formación, especialmente en el ámbito disciplinar matemático."}, {"id": 300001553, "texto": "La difusión del perfil de egreso considera las características distintivas de cada mención y se realiza tanto en el medio interno como en el externo. Al respecto, observamos que en la malla curricular no se especifican los nombres de las asignaturas para cada una de las menciones, lo que sugerimos explicitar y difundir."}, {"id": 300001571, "texto": "La Institución tiene una federación de estudiantes y la Carrera cuenta con representantes por cohorte quienes mantienen comunicación con la federación y con la jefatura de la Carrera. Los y las estudiantes participan del Consejo Académico."}, {"id": 300001595, "texto": "La C arrera cuenta con mecanismos formalizados para el seguimiento y evaluación del perfil de egreso, tanto para el antiguo como para el renovado, los cuales se centran en el desempeño estudiantil y el seguimiento curricular, con hitos definidos en semestres específicos, entre los cuales se incluye la Evaluación Nacional Diagnóstica (END). No obstante, no evidenciamos claramente la trazabilidad del uso de estos resultados para la toma de decisiones académicas y curriculares."}, {"id": 300001609, "texto": "Constatamos una insuficiencia en la efectividad del monitoreo de asignaturas críticas, las acciones de apoyo correspondientes y la ausencia de un diseño renovado con progresión explícita por competencia, lo que impacta negativamente en los resultados académicos y la progresión de los aprendizajes, provocando una disminución visible de las tasas de titulación oportuna y retención."}, {"id": 300001662, "texto": "El plan de estudios se implementa desde el año 2018 y define nuevas competencias de titulación, se orienta a un nuevo perfil de egreso y a una nueva estructura curricular."}, {"id": 300001705, "texto": "Para su construcción consideró la normativa asociada a la Formación Inicial Docente y los Estándares para las carreras de pedagogías. Fue validado tanto por el medio interno como externo."}, {"id": 300001724, "texto": "El núcleo está compuesto por 12 académicos y académicas, de quienes, cuatro son mujeres. Del total, ocho poseen doctorados y tres poseen magíster."}, {"id": 300001736, "texto": "La Carrera se presenta a su quinto proceso de acreditación. Anteriormente obtuvo cinco años por parte del Consejo Nacional de Educación."}, {"id": 300001739, "texto": "La Institución cuenta con un sistema de aseguramiento de la calidad. La formulación del Plan de Mejora de la Carrera está alineado con el Plan de Desarrollo Estratégico Institucional, el Plan de Desarrollo de la Unidad y el proceso de autoevaluación; y es supervisado y monitoreado por la Dirección y Consejo de Carrera, quienes definen el objetivo, acción de mejoramiento, indicadores, plazos, responsable y recursos asociados."}, {"id": 300001749, "texto": "Aunque la Carrera ha realizado ajustes microcurriculares enfocados en mejorar la alineación con los estándares pedagógicos nacionales, los resultados de la Evaluación Nacional Diagnóstica y las exigencias del sistema escolar, observamos un desequilibrio entre créditos asignados y la carga efectiva de trabajo estudiantil, así como también con la cantidad de evaluaciones por asignatura, lo que plantea desafíos para asegurar la coherencia y consistencia del diseño curricular."}, {"id": 300001804, "texto": "La Institución señala que el núcleo académico de la Carrera está integrado por cuatro mujeres y tres hombres. No obstante, ninguno de sus integrantes es profesor o profesora de Educación Física. Al mismo tiempo, este grupo se ha visto fortalecido a partir del mes de junio de 2024 con la incorporación de un académico al campus Limarí, cuyo título es el de profesor de Educación Básica."}, {"id": 300001870, "texto": "La elaboración del perfil consideró los resultados de inserción y seguimiento de sus egresados y contó con la participación de actores institucionales, académicos, académicas y estudiantes. No obstante, observamos una participación incipiente de empleadores en este proceso."}, {"id": 300001893, "texto": "La Carrera se adscribe a l Departamento de Filosofía de la Facultad de Filosofía y Educación. Tiene una estructura de gobernanza sólida, basada en diversas normativas y reglamentaciones, que le entregan estabilidad y eficiencia a la gestión académica y administrativa. Sin embargo, no existen instancias sistemáticas de participación y articulación l as dimensiones asociadas a la Licenciatura en Educación y Pedagogía en Filosofía, contando con la participación"}, {"id": 300001936, "texto": "La I nstitución señala que la mención se encuentra plenamente integrada en el plan de estudios, específicamente a través de seis asignaturas distribuidas desde el primer nivel de la C arrera hasta los niveles superiores. Asimismo, indica que la mención no constituye un conjunto aislado de asignaturas, sino que opera como un eje articulador del desarrollo profesional, integrando teoría, práctica y reflexión pedagógica bajo una lógica de progresión competencial y coherencia curricular."}, {"id": 300002066, "texto": "La Carrera ha logrado instalar instancias de autorregulación que orientan el quehacer académico y administrativo."}, {"id": 300002067, "texto": "La definición del plan de mejora es supervisada por la Comisión de Autoevaluación, en cuanto al cumplimiento de los compromisos adquiridos. Este plan de mejora considera debilidades, acciones previstas, mecanismos de verificación, responsables, recursos asociados, indicadores de seguimiento y resultados esperados."}, {"id": 300002068, "texto": "A través de los hitos evaluativos se genera información sobre el progreso de los estudiantes respecto a las competencias definidas en el perfil de egreso. El Comité de Carrera es quien analiza los resultados e implementa acciones remediales con el fin de mejorar los aspectos descendidos y asegurar la retención de sus estudiantes."}, {"id": 300002070, "texto": "La Carrera debe sistematizar los mecanismos de monitoreo y participación de las personas tituladas. Esta sistematización es clave para incorporar formalmente su retroalimentación en la evaluación periódica del perfil de egreso y en la toma de decisiones."}, {"id": 300002103, "texto": "En cuanto al seguimiento de egresados, la C arrera cuenta con el apoyo de la Unidad Alumni e Inserción Laboral, lo que permite una gestión sistemática y articulada orientada a favorecer la empleabilidad y el fortalecimiento del sentido de pertenencia institucional. Entre las fortalezas observadas destaca mos los altos niveles de empleabilidad las personas tituladas."}];
+const ORDEN = [300000424, 300001027, 300001739, 300001662, 300001936, 300000410, 300000101, 300000771, 300001460, 300000634, 300001018, 300001004, 300002103, 300000910, 300001163, 300000524, 300001057, 300000411, 300001480, 300001077, 300001571, 300002070, 300001033, 300000959, 300001079, 300001210, 300001499, 300000951, 300000180, 300000981, 300001487, 300001301, 300000861, 300000480, 300002066, 300000644, 300001005, 300001253, 300000918, 300000286, 300000816, 300001071, 300001149, 300000687, 300001139, 300000098, 300000431, 300001724, 300000940, 300001749, 300001291, 300001408, 300001804, 300000797, 300001893, 300000663, 300001736, 300002067, 300000130, 300001307, 300002068, 300001535, 300000522, 300001418, 300001511, 300000370, 300001595, 300001553, 300001281, 300000800, 300000782, 300000905, 300001705, 300000998, 300001378, 300000262, 300000115, 300000408, 300001870, 300000743, 300000789, 300000469, 300000025, 300000776, 300000658, 300000086, 300001486, 300000593, 300000233, 300001609, 300000310, 300000609];
+
+const $ = id => document.getElementById(id);
+const VALORES = ["es_debilidad", "no_es_debilidad", "no_se"];
+const ETIQ = {es_debilidad:"contiene debilidad", no_es_debilidad:"no contiene debilidad", no_se:"no sé"};
+const PREGUNTA = "¿Este párrafo contiene una debilidad?";
+
+let S = {fase:"", gate:false, consent:null, marcas:{}, practica:{}, idxProd:0, escala:1,
+         ini:null, fin:null, ultimoRespaldo:null};
+let tShow = 0;
+let tAv = null;
+function programaAvance(){
+  if(tAv) clearTimeout(tAv);
+  tAv = setTimeout(function(){ tAv = null; avanzar(); }, 500);
+}
+function cancelaAvance(){ if(tAv){ clearTimeout(tAv); tAv = null; } }
+
+/* tarjeta siempre a mano (Burghardt 2012, R21): overlay desde la barra superior */
+function abreTarjeta(){
+  $("overlayTarjeta").classList.remove("oculto");
+  window.scrollTo(0,0);
+}
+function cierraTarjeta(){ $("overlayTarjeta").classList.add("oculto"); }
+function tarjetaAbierta(){ return !$("overlayTarjeta").classList.contains("oculto"); }
+
+/* tamaño del texto del párrafo (Burghardt 2012, R8) */
+function escalaTexto(){ return S.escala || 1; }
+function aplicaEscala(){
+  document.querySelectorAll(".parrafo .texto").forEach(function(el){
+    el.style.fontSize = (1.08*escalaTexto()).toFixed(2)+"rem";
+  });
+  $("bTextoMenos").disabled = escalaTexto() <= 0.9;
+  $("bTextoMas").disabled = escalaTexto() >= 1.4;
+}
+function ajustaEscala(delta){
+  const nueva = Math.min(1.4, Math.max(0.9, Math.round((escalaTexto()+delta)*100)/100));
+  if(nueva === escalaTexto()) return;
+  S.escala = nueva; guardar(); aplicaEscala();
+}
+
+function claveLS(){ return "cnapurge_panel_" + VERSION + "_" + EXPERTO + "_" + ASIG_SHA.slice(0,8); }
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+function ahora(){ return new Date().toISOString(); }
+
+function mostrar(id){
+  ["s0","s2","s2b","s3","s4"].forEach(x=>$(x).classList.add("oculto"));
+  $(id).classList.remove("oculto");
+  window.scrollTo(0,0);
+}
+function guardar(){
+  try{ localStorage.setItem(claveLS(), JSON.stringify(S)); }catch(e){ console.warn(e); }
+}
+function cargar(){
+  try{
+    const raw=localStorage.getItem(claveLS());
+    if(raw) Object.assign(S, JSON.parse(raw));
+  }catch(e){}
+}
+
+function itemPorId(id){ return ITEMS.find(x=>x.id===id); }
+function posDe(id){ return ORDEN.indexOf(id)+1; }
+function respondidos(){ return Object.keys(S.marcas).length; }
+function porResponder(){ return ORDEN.filter(id=>!S.marcas[id]); }
+
+function registrar(id, v, tipo){
+  const m = S.marcas[id] || {pos:posDe(id), eventos:[], razonamiento:"", motivo_nose:"", v:null};
+  const ms = Math.round(performance.now()-tShow);
+  m.eventos.push({e:tipo, v:v, ts:ahora(), ms:ms});
+  m.v = v;
+  if(tipo==="revision") m.nrev = (m.nrev||0)+1;
+  S.marcas[id] = m;
+  guardar();
+}
+
+/* ---------- práctica ---------- */
+let idxPil = 0;
+function asegurarPractica(){ if(S.practica && S.practica.orden3 && S.practica.orden3.length===PRACTICA.length) return;
+  S.practica = S.practica || {}; S.practica.orden3 = PRACTICA.map(x=>x.id); S.practica.marcas = S.practica.marcas || {}; }
+
+function renderPractica(){
+  const total=PRACTICA.length;
+  const pid=(S.practica.orden3||PRACTICA.map(x=>x.id))[idxPil];
+  const it=PRACTICA.find(x=>x.id===pid);
+  const marcado=S.practica.marcas[pid];
+  tShow=performance.now();
+  $("progPil").textContent="párrafo "+(idxPil+1)+" de "+total;
+  $("barraPil").style.width=(100*(idxPil+1)/total)+"%";
+  const cont=$("escenarioPil"); cont.innerHTML="";
+  const div=document.createElement("div"); div.className="parrafo";
+  const h=document.createElement("h3"); h.textContent="Práctica "+(idxPil+1)+" de "+total; div.appendChild(h);
+  const p=document.createElement("p"); p.className="texto"; p.textContent=it.texto; div.appendChild(p);
+  const q=document.createElement("p"); q.className="pregunta"; q.textContent=PREGUNTA; div.appendChild(q);
+  VALORES.forEach(function(v){
+    const l=document.createElement("label");
+    l.innerHTML='<input type="radio" name="vp" value="'+v+'" '+(marcado?"disabled":"")+'> '+ETIQ[v];
+    div.appendChild(l);
+  });
+  const verd=document.createElement("div"); verd.className="registrado"; verd.id="fbPr"; verd.style.display="none";
+  div.appendChild(verd);
+  cont.appendChild(div);
+  if(marcado){
+    pintarFbPr(it, marcado.v);
+    VALORES.forEach(v=>{ const el=document.querySelector('input[name="vp"][value="'+v+'"]'); if(el) el.disabled=true; });
+  }else{
+    VALORES.forEach(function(v){
+      const el=document.querySelector('input[name="vp"][value="'+v+'"]');
+      el.addEventListener("change", function(){
+        S.practica.marcas[pid]={v:v, ts:ahora(), ms:Math.round(performance.now()-tShow)};
+        S.practica.intentos=(S.practica.intentos||0)+1;
+        guardar();
+        pintarFbPr(it, v);
+        VALORES.forEach(x=>{ const e2=document.querySelector('input[name="vp"][value="'+x+'"]'); if(e2) e2.disabled=true; });
+        setTimeout(function(){
+          if(idxPil<total-1){ idxPil++; renderPractica(); }
+          else{ finPractica(); }
+        }, 1400);
+      });
+    });
+  }
+}
+function pintarFbPr(it, v){
+  const ok = v===it.clave;
+  const fb=$("fbPr");
+  fb.innerHTML = (ok?'<span class="fb-ok">✓ Correcto.</span>':'<span class="fb-mal">✗ La clave es: '+ETIQ[it.clave]+'.</span>')
+    + ' Tu marca: '+ETIQ[v]+'. <span class="mini">'+esc(it.nota||"")+'</span>';
+  fb.style.display="block";
+}
+function finPractica(){
+  const ok=PRACTICA.filter(it=>S.practica.marcas[it.id] && S.practica.marcas[it.id].v===it.clave).length;
+  const pct=Math.round(100*ok/PRACTICA.length);
+  $("tituloPiloto").textContent="Práctica: "+ok+" de "+PRACTICA.length+" ("+pct+"%)";
+  const filas=PRACTICA.map(function(it){
+    const dado=(S.practica.marcas[it.id]||{}).v||"";
+    const bien=dado===it.clave;
+    const fila = PRACTICA.indexOf(it)+1;
+    return "<tr><td>Práctica "+fila+"</td><td>"+(bien?'<span class="fb-ok">✓</span>':'<span class="fb-mal">✗</span>')+"</td><td>clave: "+ETIQ[it.clave]+"</td><td>tu marca: "+(dado?ETIQ[dado]:"—")+"</td></tr>";
+  });
+  $("tablaPiloto").innerHTML='<table class="res"><tr><th>párrafo</th><th></th><th>clave</th><th>tu marca</th></tr>'+filas.join("")+"</table>";
+  const completos=PRACTICA.filter(it=>S.practica.marcas[it.id]).length;
+  if(completos===PRACTICA.length){ S.gate=true; guardar(); }
+  $("piePiloto").innerHTML="<p class='mini'>Práctica formativa: el resultado no bloquea el paso al marcaje real. Si alguna clave te sorprende, relee las instrucciones.</p>"+
+    '<button class="boton" id="bGo">Comenzar marcaje real</button> '+
+    '<button class="boton sec" id="bRetry">Repetir práctica</button> '+
+    '<button class="boton sec" id="bVerTar">Releer las instrucciones</button>';
+  mostrar("s2b");
+  $("bGo").onclick=comenzarProduccion;
+  $("bRetry").onclick=function(){
+    S.practica.marcas={}; idxPil=0; guardar();
+    mostrar("s2"); renderPractica();
+  };
+  $("bVerTar").onclick=function(){ abreTarjeta(); };
+}
+
+/* ---------- producción ---------- */
+function comenzarProduccion(){
+  S.fase="produccion"; S.ini=S.ini||ahora();
+  const primeroSin=ORDEN.findIndex(id=>!S.marcas[id]);
+  S.idxProd = primeroSin>=0 ? primeroSin : 0;
+  guardar();
+  mostrar("s3"); renderProd();
+}
+function renderProd(){
+  const id=ORDEN[S.idxProd];
+  const it=itemPorId(id);
+  const m=S.marcas[id];
+  tShow=performance.now();
+  const resp=respondidos();
+  $("progProd").textContent="párrafo "+(S.idxProd+1)+" de "+ORDEN.length+" · respondidos "+resp+"/"+ORDEN.length;
+  $("barraProd").style.width=(100*(S.idxProd+1)/ORDEN.length)+"%";
+  const falta=porResponder().length;
+  if(resp>0){
+    const tiempos=Object.values(S.marcas).flatMap(x=>x.eventos.map(e=>e.ms)).filter(x=>x>0).sort((a,b)=>a-b);
+    const med=tiempos[Math.floor(tiempos.length/2)]||60000;
+    const min=Math.max(1, Math.round(med*falta/60000));
+    $("miniProd").textContent="≈ "+min+" min restantes estimados · "+falta+" por responder";
+  }else{ $("miniProd").textContent=""; }
+
+  const cont=$("escenarioProd"); cont.innerHTML="";
+  const div=document.createElement("div"); div.className="parrafo"; div.id="pa_actual";
+  const h=document.createElement("h3"); h.textContent="Párrafo "+(S.idxProd+1)+" de "+ORDEN.length; div.appendChild(h);
+  const p=document.createElement("p"); p.className="texto"; p.textContent=it.texto; div.appendChild(p);
+  const q=document.createElement("p"); q.className="pregunta"; q.textContent=PREGUNTA; div.appendChild(q);
+  VALORES.forEach(function(v){
+    const l=document.createElement("label");
+    l.innerHTML='<input type="radio" name="ver" value="'+v+'" '+(m&&m.v===v?"checked":"")+'> '+ETIQ[v];
+    div.appendChild(l);
+  });
+  const nd=document.createElement("div"); nd.className="nose-motivo oculto"; nd.id="bloqueNS";
+  nd.innerHTML='<label class="mini">Si marcaste “no sé”: motivo (opcional)<br><select id="motivoNS"><option value="">—</option><option value="ilegible">ilegible</option><option value="truncado">truncado</option><option value="otro">otro</option></select></label>';
+  div.appendChild(nd);
+  const verd=document.createElement("div"); verd.className="registrado"; verd.id="verd_actual"; verd.style.display="none";
+  div.appendChild(verd);
+  const pie=document.createElement("p"); pie.className="mini";
+  pie.innerHTML='Atajos: <kbd>1</kbd> contiene · <kbd>2</kbd> no contiene · <kbd>3</kbd> no sé · <kbd>←</kbd>/<kbd>→</kbd> navegar · <kbd>Enter</kbd> avanzar';
+  div.appendChild(pie);
+  cont.appendChild(div);
+
+  if(m){
+    $("verd_actual").textContent="Registrado: "+ETIQ[m.v]+(m.nrev?" ("+m.nrev+" corrección(es))":"")+" — puedes cambiarlo o avanzar.";
+    $("verd_actual").style.display="block";
+  }
+  $("bloqueNS").classList.toggle("oculto", !(m && m.v==="no_se"));
+  if(m && m.motivo_nose) $("motivoNS").value=m.motivo_nose;
+
+  VALORES.forEach(function(v){
+    const el=document.querySelector('input[name="ver"][value="'+v+'"]');
+    el.addEventListener("change", function(){
+      if(m && m.v===v) return;
+      registrar(id, v, m ? "revision" : "marca");
+      renderProd();
+      if(!m) programaAvance();
+    });
+  });
+  $("motivoNS").addEventListener("change", function(){
+    const mm=S.marcas[id];
+    if(mm){ mm.motivo_nose=this.value; guardar(); }
+  });
+}
+
+function avanzar(){ if(S.idxProd<ORDEN.length-1){ S.idxProd++; guardar(); renderProd(); } else finProduccion(); }
+function retroceder(){ cancelaAvance(); if(S.idxProd>0){ S.idxProd--; guardar(); renderProd(); } }
+function irPrimeroSin(){
+  cancelaAvance();
+  const i=ORDEN.findIndex(id=>!S.marcas[id]);
+  if(i>=0){ S.idxProd=i; guardar(); renderProd(); } else finProduccion();
+}
+
+/* ---------- exportación ---------- */
+function construirExport(){
+  const items=ORDEN.map(function(id){
+    const m=S.marcas[id]||null;
+    return m ? {parrafo_id:id, pos:m.pos, valor:m.v, razonamiento:m.razonamiento||"",
+                motivo_nose:m.motivo_nose||"", n_revisiones:m.nrev||0,
+                eventos:m.eventos} : null;
+  }).filter(Boolean);
+  return {
+    tipo:TIPO, version:VERSION, experto:EXPERTO,
+    asignacion_sha256:ASIG_SHA, tarjeta_sha256:TARJETA_SHA,
+    consent_ts:S.consent, ini:S.ini, fin:S.fin||ahora(),
+    usuario_agente:navigator.userAgent,
+    practica:S.practica, puerta_superada:!!S.gate,
+    respondidos:items.length, total:ORDEN.length,
+    items:items
+  };
+}
+function descargar(nombre, texto, tipo){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([texto],{type:tipo}));
+  a.download=nombre; a.click();
+}
+function exportar(){
+  S.fin=ahora(); S.ultimoRespaldo=S.fin; guardar();
+  const exp=construirExport();
+  const json=JSON.stringify(exp, null, 1);
+  const f=new Date(); const hh=f.getFullYear()+String(f.getMonth()+1).padStart(2,"0")+String(f.getDate()).padStart(2,"0")+"-"+String(f.getHours()).padStart(2,"0")+String(f.getMinutes()).padStart(2,"0");
+  descargar("panel_"+EXPERTO+"_respaldo_"+hh+".json", json, "application/json");
+  return exp;
+}
+function importar(archivo){
+  const fr=new FileReader();
+  fr.onload=function(){
+    let d=null;
+    try{ d=JSON.parse(fr.result); }catch(e){ alert("El archivo no es un respaldo JSON válido."); return; }
+    if(!d || d.tipo!==TIPO){ alert("No es un respaldo del panel."); return; }
+    if(d.experto!==EXPERTO){ alert("El respaldo es del experto "+d.experto+" y este archivo corresponde al experto "+EXPERTO+"."); return; }
+    if(d.version!==VERSION){ alert("Versión distinta ("+d.version+"). Pide el instrumento correcto al coordinador."); return; }
+    if(d.asignacion_sha256!==ASIG_SHA){ alert("El respaldo no coincide con esta asignación. Pide el instrumento correcto al coordinador."); return; }
+    if(respondidos()>0 && !confirm("Ya hay "+respondidos()+" párrafos marcados en este navegador. ¿Reemplazar todo por el contenido del respaldo?")) return;
+    S={fase:(d.respondidos>=d.total?"produccion":(d.puerta_superada?"produccion":"practica")),
+       gate:!!d.puerta_superada, consent:d.consent_ts, marcas:{}, practica:d.practica||{},
+       idxProd:0, ini:d.ini, fin:d.fin, ultimoRespaldo:d.fin};
+    d.items.forEach(function(it){
+      const m={pos:it.pos, eventos:it.eventos||[], razonamiento:it.razonamiento||"",
+               motivo_nose:it.motivo_nose||"", v:it.valor, nrev:it.n_revisiones||0};
+      S.marcas[it.parrafo_id]=m;
+      const i=ORDEN.indexOf(it.parrafo_id);
+      if(i>=0 && i>=S.idxProd) S.idxProd=i;
+    });
+    const primeroSin=ORDEN.findIndex(id=>!S.marcas[id]);
+    S.idxProd = primeroSin>=0 ? primeroSin : ORDEN.length-1;
+    guardar();
+    if(S.gate){ mostrar("s3"); renderProd(); }
+    else{ idxPil=0; asegurarPractica(); mostrar("s2"); renderPractica(); }
+  };
+  fr.readAsText(archivo);
+}
+
+function finProduccion(){
+  S.fin=ahora(); guardar();
+  const n=respondidos();
+  $("tituloFin").textContent = n>=ORDEN.length ? "Marcaje terminado" : "Marcaje detenido (parcial)";
+  $("resumen").textContent="Experto "+EXPERTO+" · "+n+" de "+ORDEN.length+" párrafos · instrumento "+VERSION+".";
+  mostrar("s4");
+  const exp=exportar();
+  $("preview").textContent=JSON.stringify(exp,null,1).slice(0,1800)+"\n…";
+}
+
+/* ---------- teclado ---------- */
+document.addEventListener("keydown", function(e){
+  if(tarjetaAbierta()){
+    if(e.key==="Escape") cierraTarjeta();
+    return; /* sin atajos de marcaje mientras la tarjeta está abierta */
+  }
+  if($("s3").classList.contains("oculto") && $("s2").classList.contains("oculto")) return;
+  const enProd = !$("s3").classList.contains("oculto");
+  if(e.key==="ArrowRight" || (e.key==="Enter" && enProd)){
+    if(document.activeElement && document.activeElement.tagName==="TEXTAREA") return;
+    e.preventDefault(); enProd?avanzar():null; return;
+  }
+  if(e.key==="ArrowLeft" && enProd){
+    if(document.activeElement && document.activeElement.tagName==="TEXTAREA") return;
+    e.preventDefault(); retroceder(); return;
+  }
+  if(e.key==="Enter" && !enProd){
+    if(!S.practica || !S.practica.orden3) return;
+    const marcado=S.practica.marcas[S.practica.orden3[idxPil]];
+    if(marcado && idxPil<PRACTICA.length-1){ idxPil++; renderPractica(); }
+    return;
+  }
+  const mapa={"1":"es_debilidad","2":"no_es_debilidad","3":"no_se"};
+  if(!mapa[e.key]) return;
+  const act=document.activeElement;
+  if(act && (act.tagName==="TEXTAREA" || act.tagName==="SELECT")) return;
+  e.preventDefault();
+  if(enProd){
+    const id=ORDEN[S.idxProd]; const m=S.marcas[id];
+    if(m && m.v===mapa[e.key]) return;
+    registrar(id, mapa[e.key], m?"revision":"marca");
+    renderProd();
+    if(!m) programaAvance();
+  }else{
+    const el=document.querySelector('input[name="vp"][value="'+mapa[e.key]+'"]');
+    if(el && !el.disabled){ el.checked=true; el.dispatchEvent(new Event("change")); }
+  }
+});
+
+window.addEventListener("beforeunload", function(e){
+  if(S.gate && respondidos()>0 && respondidos()!==ORDEN.length){
+    e.preventDefault(); e.returnValue="";
+  }
+});
+
+/* ---------- arranque ---------- */
+document.addEventListener("DOMContentLoaded", function(){
+  $("tarjeta").innerHTML=TARJETA_HTML;
+  cargar();
+  try{ localStorage.removeItem("cnapurge_panel300_"+EXPERTO+"_v1"); }catch(e){} /* clave legacy pre-v4 */
+  asegurarPractica();
+  if(!S.practica.marcas) S.practica.marcas={};
+  /* el consentimiento es la acción de continuar: el clic registra la hora */
+  $("b0").onclick=function(){
+    S.consent=S.consent||ahora();
+    S.ini=S.ini||ahora();
+    idxPil=0; asegurarPractica();
+    if(!S.practica.marcas) S.practica.marcas={};
+    /* corrida fresca: si los 3 ya estaban marcados de una sesión anterior,
+       borra resultados (la práctica es formativa y repetible) */
+    if(PRACTICA.every(function(it){ return S.practica.marcas[it.id]; })){
+      S.practica.marcas={}; S.practica.intentos=0;
+    }
+    guardar();
+    mostrar("s2"); renderPractica();
+  };
+    $("bPrev").onclick=retroceder;
+  $("bNext").onclick=avanzar;
+  $("bPrimeroSin").onclick=irPrimeroSin;
+  $("bJSON").onclick=function(){ const exp=exportar(); $("preview").textContent=JSON.stringify(exp,null,1).slice(0,1800)+"\n…"; };
+  $("bRespaldoTop").onclick=function(){
+    if(respondidos()===0 && !S.gate){ alert("Aún no hay nada que respaldar."); return; }
+    const exp=exportar();
+    alert("Respaldo descargado: "+exp.respondidos+" párrafos marcados.");
+  };
+  $("fImport").addEventListener("change", function(){ if(this.files[0]) importar(this.files[0]); this.value=""; });
+  $("linkParcial").addEventListener("click", function(e){ e.preventDefault(); finProduccion(); });
+  $("bVerTarjeta").onclick=abreTarjeta;
+  $("bCerrarTarjeta").onclick=cierraTarjeta;
+  $("bTextoMenos").onclick=function(){ ajustaEscala(-0.1); };
+  $("bTextoMas").onclick=function(){ ajustaEscala(0.1); };
+  $("tarjetaOverlay").innerHTML=TARJETA_HTML;
+  aplicaEscala();
+
+  /* reanudar */
+  if(S.consent && S.gate && (respondidos()>0 || S.fase==="produccion")){
+    const primeroSin=ORDEN.findIndex(id=>!S.marcas[id]);
+    S.idxProd = primeroSin>=0 ? primeroSin : 0;
+    if(respondidos()>=ORDEN.length){ mostrar("s4"); $("resumen").textContent="Experto "+EXPERTO+" · "+respondidos()+" de "+ORDEN.length+" párrafos (completo). Puedes descargar el respaldo de nuevo."; $("bJSON").onclick=function(){ const exp=exportar(); $("preview").textContent=JSON.stringify(exp,null,1).slice(0,1800)+"\n…"; }; }
+    else{ mostrar("s3"); renderProd(); }
+  } else if(S.consent && S.fase==="practica"){
+    asegurarPractica();
+    if(!S.practica.marcas) S.practica.marcas={};
+    const sin=S.practica.orden3.findIndex(function(id){ return !S.practica.marcas[id]; });
+    if(sin<0){
+      /* práctica completa de una sesión anterior: mostrar el resumen, no el ítem con feedback */
+      finPractica();
+    }else{
+      idxPil = sin;
+      mostrar("s2"); renderPractica();
+    }
+  }
+});
+</script>
+</body>
+</html>
