@@ -130,7 +130,7 @@ marcaje real.</p>
   <button class="boton sec" id="bNext" style="margin-top:0">Siguiente →</button>
   <button class="boton sec" id="bPrimeroSin" style="margin-top:0">Ir al primero sin responder</button>
 </div>
-<p class="mini" style="margin-top:1rem"><a href="#" id="linkParcial">terminar y exportar lo marcado hasta ahora</a></p>
+<p class="mini" style="margin-top:1rem"><a href="#" id="linkParcial">terminar aquí</a></p>
 </section>
 
 <section id="s4" class="oculto">
@@ -139,9 +139,9 @@ marcaje real.</p>
 <p id="resumen"></p>
 <button class="boton" id="bJSON">Descargar respaldo (JSON)</button>
 <pre id="preview" style="font-size:.75rem; background:#f4f4f4; padding:.8em; overflow:auto; max-height:16rem;"></pre>
-<p class="mini">Envía el archivo JSON descargado al equipo de investigación (correo del coordinador).
-Puedes reabrir este archivo más tarde para revisar o completar: tu progreso también se
-guarda en línea y continúa automáticamente en este u otro computador.</p>
+<p class="mini">No tiene que enviar nada: sus respuestas quedaron guardadas en el
+servidor del estudio. Puede reabrir este instrumento más tarde para revisar o
+completar; su progreso continúa automáticamente en este u otro computador.</p>
 <p class="mini" style="margin-top:.8rem"><a href="#" id="linkRevisar">¿Cometiste un error? Volver a revisar y corregir tus respuestas</a> — cada cambio queda registrado como corrección.</p>
 </section>
 
@@ -450,8 +450,7 @@ function finProduccion(){
   $("tituloFin").textContent = n>=ORDEN.length ? "Marcaje terminado" : "Marcaje detenido (parcial)";
   $("resumen").textContent="Experto "+EXPERTO+" · "+n+" de "+ORDEN.length+" párrafos · instrumento "+VERSION+".";
   mostrar("s4");
-  const exp=exportar();
-  $("preview").textContent=JSON.stringify(exp,null,1).slice(0,1800)+"\n…";
+  $("preview").textContent="Sus respuestas están guardadas en el servidor del estudio. El botón de arriba descarga una copia de seguridad si la necesita.";
 }
 
 /* ---------- teclado ---------- */
@@ -533,9 +532,7 @@ document.addEventListener("DOMContentLoaded", function(){
   };
   $("linkParcial").addEventListener("click", function(e){
     e.preventDefault();
-    const exp=exportar();               /* descarga inmediata con lo marcado hasta ahora */
-    finProduccion();
-    alert("Respaldo descargado: "+exp.respondidos+" de "+ORDEN.length+" párrafos marcados.");
+    finProduccion();   /* terminar aquí: sin descarga; respaldo disponible como plan B */
   });
   $("bVerTarjeta").onclick=abreTarjeta;
   $("bCerrarTarjeta").onclick=cierraTarjeta;
