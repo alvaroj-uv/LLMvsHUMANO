@@ -160,15 +160,23 @@ const SB_URL = "https://rwgywejzlwmfmhliyviv.supabase.co";
 const SB_KEY = "sb_publishable_bX2ANyhDUdAxI57Hqp3a0A_EDylc52L";
 const SB_HDR = {"apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json", "x-experto-codigo":EXPERTO};
 let sbCola = []; let sbTimer = null;
-function sbEncolar(payload){ sbCola.push(payload); if(!sbTimer) sbTimer = setTimeout(sbVaciar, 3000); }
+/* ---------- FAILSAFE v1: cola persistente + autosanado (2026-11-20) ---------- */
+function sbClaveCola(){ return "cnapurge_panel300_cola_"+EXPERTO; }
+function sbPersistirCola(){ try{ localStorage.setItem(sbClaveCola(), JSON.stringify(sbCola)); }catch(e){} }
+function sbRestaurarCola(){ try{ const c=JSON.parse(localStorage.getItem(sbClaveCola())||"[]"); const v={}; sbCola.forEach(function(p){ v[String(p.parrafo_id)]=1; }); c.forEach(function(p){ if(p && p.parrafo_id!=null && !v[String(p.parrafo_id)]){ sbCola.push(p); v[String(p.parrafo_id)]=1; } }); }catch(e){ console.warn("failsafe restaurar:", e); } if(sbCola.length && !sbTimer) sbTimer=setTimeout(sbVaciar,800); }
+function sbSanar(filas){ try{ const enSrv={}; (filas||[]).forEach(function(f){ enSrv[String(f.parrafo_id)]=1; }); const enCola={}; sbCola.forEach(function(p){ enCola[String(p.parrafo_id)]=1; }); let n=0; Object.keys(S.marcas).forEach(function(k){ if(!enSrv[k] && !enCola[k]){ sbCola.push(sbPayloadDe(k)); enCola[k]=1; n++; } }); if(n){ console.log("failsafe: reencolando "+n+" marca(s) ausente(s) en el servidor"); sbPersistirCola(); if(!sbTimer) sbTimer=setTimeout(sbVaciar,800); } }catch(e){ console.warn("failsafe sanar:", e); } }
+function sbEncolar(payload){ sbCola.push(payload); sbPersistirCola(); /* FAILSAFE v1 */ if(!sbTimer) sbTimer = setTimeout(sbVaciar, 3000); }
 function sbVaciar(){
   if(!sbCola.length){ sbTimer = null; return; }
   const lote = sbCola.splice(0, sbCola.length);
+  sbPersistirCola(); /* FAILSAFE v1 */
   const hdrs = Object.assign({"Prefer":"resolution=merge-duplicates"}, SB_HDR);
   fetch(SB_URL+"/rest/v1/marcas", {method:"POST", headers:hdrs, body:JSON.stringify(lote)})
     .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); sbTimer = null; })
-    .catch(function(e){ sbCola = lote.concat(sbCola); sbTimer = setTimeout(sbVaciar, 15000); console.warn("supabase envio:", e); });
+    .catch(function(e){ sbCola = lote.concat(sbCola); sbPersistirCola(); /* FAILSAFE v1 */ sbTimer = setTimeout(sbVaciar, 15000); console.warn("supabase envio:", e); });
 }
+/* FAILSAFE v1: último intento al cerrar/ocultar la pestaña (fetch keepalive sobrevive al unload) */
+window.addEventListener("pagehide", function(){ if(sbCola.length){ try{ fetch(SB_URL+"/rest/v1/marcas", {method:"POST", keepalive:true, headers:Object.assign({"Prefer":"resolution=merge-duplicates"}, SB_HDR), body:JSON.stringify(sbCola)}).catch(function(){}); }catch(e){} } }, false);
 function sbPayloadDe(id){
   const m = S.marcas[id];
   return {experto:EXPERTO, parrafo_id:Number(id), valor:m.v,
@@ -177,7 +185,7 @@ function sbPayloadDe(id){
 }
 function sbReanudar(cb){
   try{
-    fetch(SB_URL+"/rest/v1/marcas?experto=eq."+encodeURIComponent(EXPERTO)+"&select=parrafo_id,valor,n_revisiones,eventos,ms", {headers:SB_HDR})
+    fetch(SB_URL+"/rest/v1/marcas?experto=eq."+encodeURIComponent(EXPERTO)+"&select=parrafo_id,valor,n_revisiones,eventos,ms&_cb="+Date.now(), {headers:SB_HDR}) /* FAILSAFE v1 */
       .then(function(r){ return r.ok ? r.json() : []; })
       .then(function(filas){
         (filas||[]).forEach(function(f){
@@ -450,7 +458,7 @@ function finProduccion(){
   $("tituloFin").textContent = n>=ORDEN.length ? "Marcaje terminado" : "Marcaje detenido (parcial)";
   $("resumen").textContent="Experto "+EXPERTO+" · "+n+" de "+ORDEN.length+" párrafos · instrumento "+VERSION+".";
   mostrar("s4");
-  $("preview").textContent="Sus respuestas están guardadas en el servidor del estudio. El botón de arriba descarga una copia de seguridad si la necesita.";
+  $("preview").textContent = sbCola.length ? "Atención: "+sbCola.length+" respuesta(s) aún no llegan al servidor; se reintentan automáticamente. Mantén esta pestaña abierta unos segundos o vuelve a abrir el instrumento más tarde. El botón de arriba descarga una copia de seguridad." : "Sus respuestas están guardadas en el servidor del estudio. El botón de arriba descarga una copia de seguridad si la necesita."; /* FAILSAFE v1 */
 }
 
 /* ---------- teclado ---------- */
@@ -503,7 +511,8 @@ document.addEventListener("DOMContentLoaded", function(){
   $("tarjeta").innerHTML=TARJETA_HTML;
   cargar();
   try{ localStorage.removeItem("cnapurge_panel300_"+EXPERTO+"_v1"); }catch(e){}
-  sbReanudar();
+  sbRestaurarCola(); /* FAILSAFE v1 */
+  sbReanudar(sbSanar); /* FAILSAFE v1 */
   if(sbTimer) sbVaciar(); /* clave legacy pre-v4 */
   asegurarPractica();
   if(!S.practica.marcas) S.practica.marcas={};
